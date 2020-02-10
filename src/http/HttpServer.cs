@@ -5,30 +5,32 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 
 namespace http_server.http
 {
 	public class HttpServer
 	{
-		private const int PORT = 5000;
 		private const int RESPONSE_BUFFER_SIZE = 512;
 		private const string HOST = "localhost";
 		private Socket _listener;
+		private int _port;
 
-		public static async Task Start()
+		public static async Task Start(int port)
 		{
-			await new HttpServer()._runServer();
+			await new HttpServer(port)._runServer();
 		}
 
-		private HttpServer()
+		private HttpServer(int port)
 		{
+			this._port = port;
 			this._listener = _initListener();
 		}
 
 		private Socket _initListener()
 		{
 			var ipHostInfo = Dns.GetHostEntry(HOST);
-			IPAddress? ipAddress = ipHostInfo.AddressList.First(
+			IPAddress? ipAddress = ipHostInfo.AddressList.FirstOrDefault(
 				address => address.AddressFamily == AddressFamily.InterNetwork);
 
 			if (ipAddress == null)
@@ -36,7 +38,7 @@ namespace http_server.http
 				throw new Exception("No IPv4 Address found");
 			}
 
-			var localEndPoint = new IPEndPoint(ipAddress, PORT);
+			var localEndPoint = new IPEndPoint(ipAddress, _port);
 
 			var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 			socket.Bind(localEndPoint);
@@ -47,12 +49,38 @@ namespace http_server.http
 
 		private async Task _runServer()
 		{
-			Console.WriteLine($"Running server on {HOST}:{PORT}");
-			while (true)
+			var cancellationToken = _initCancellationToken();
+			Console.WriteLine($"Running server on {HOST}:{_port} Press Ctrl+c to stop");
+			try
 			{
-				var handler = await _listener.AcceptAsync();
-				var task = Task.Run(() => _handleRequest(handler));
+				using (cancellationToken.Register(() => _listener.Dispose()))
+				{
+					while (!cancellationToken.IsCancellationRequested)
+					{
+						var handler = await _listener.AcceptAsync();
+						if (handler != null)
+						{
+							var task = _handleRequest(handler);
+						}
+					}
+				}
 			}
+			catch
+			{
+				Console.WriteLine("Shutting down server");
+			}
+		}
+
+		private CancellationToken _initCancellationToken()
+		{
+			var cancellationToken = new CancellationTokenSource();
+			Console.CancelKeyPress += (sender, args) =>
+			{
+				args.Cancel = true;
+				cancellationToken.Cancel();
+			};
+
+			return cancellationToken.Token;
 		}
 
 		private async Task _handleRequest(Socket socket)
@@ -62,7 +90,15 @@ namespace http_server.http
 
 			var request = HttpRequestMessage.FromMessage(requestMessage);
 
-			Console.WriteLine(request.AsString());
+			HttpResponseMessage response;
+
+			response = await HttpController.Run(request);
+
+			var encodedRequest = Encoding.ASCII.GetBytes(response.ToString());
+
+			await socket.SendAsync(encodedRequest, SocketFlags.None);
+
+			socket.Dispose();
 		}
 
 		private async Task<string> _readRequest(Socket socket)

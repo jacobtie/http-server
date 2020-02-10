@@ -8,10 +8,22 @@ namespace http_server
 	{
 		static async Task Main(string[] args)
 		{
-			await HttpServer.Start();
-
-			Console.WriteLine("Press any key to exit...");
-			Console.Read();
+			if (args.Length != 1)
+			{
+				Console.WriteLine("Missing port number");
+			}
+			else
+			{
+				int port;
+				if (Int32.TryParse(args[0], out port))
+				{
+					await HttpServer.Start(port);
+				}
+				else
+				{
+					Console.WriteLine("Invalid port number");
+				}
+			}
 		}
 	}
 }
