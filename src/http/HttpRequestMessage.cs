@@ -33,7 +33,7 @@ namespace http_server.http
 
 		private void _initDefaultHeaders(string host)
 		{
-			this.SetHeaderValue("User-Agent", "KrevatAgent/0.1.0");
+			this.SetHeaderValue("User-Agent", "ReynoldsAgent/0.1.0");
 			this.SetHeaderValue("Accept", "*/*");
 			this.SetHeaderValue("Cache-Control", "no-cache");
 			this.SetHeaderValue("Host", host);

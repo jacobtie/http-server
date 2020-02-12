@@ -4,26 +4,32 @@ using System.Text;
 
 namespace http_server.http
 {
+	// Class to create a HTTP Response Message
 	public class HttpResponseMessage
 	{
+		// Basic getters and setters
 		public string Version { get; set; }
 		public HttpResponseCode Code { get; set; }
 		public Dictionary<string, string> Headers { get; set; }
 		public string? Body { get; set; }
 
+		// Constructor to create a HTTP Response Message with code and body
 		public HttpResponseMessage(HttpResponseCode code, string? body)
 		{
 			Version = "HTTP/1.1";
 			Code = code;
 			Headers = new Dictionary<string, string>();
 			Body = body;
+
+			// Initialize the headers
 			_initHeaders();
 		}
 
+		// Method to initialize the headers of the response message
 		private void _initHeaders()
 		{
 			Headers.Add("Date", DateTime.Now.ToString("r"));
-			Headers.Add("Server", "Faye/1.0.0");
+			Headers.Add("Server", "Mason/1.0.0");
 			Headers.Add("Connection", "close");
 			if (Body != null)
 			{
@@ -32,6 +38,7 @@ namespace http_server.http
 			}
 		}
 
+		// Method to carefully format the contents of the message as a particular string
 		public override string ToString()
 		{
 			var sb = new StringBuilder();
