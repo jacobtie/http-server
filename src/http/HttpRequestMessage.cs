@@ -68,13 +68,24 @@ namespace http_server.http
 			lines = lines[1..];
 
 			var headers = new Dictionary<string, string>();
-			foreach (var line in lines[..^2])
+			int lastHeaderLine = -1;
+			for (int i = 0; i < lines.Length; i++)
 			{
-				var headerValue = line.Split(": ");
+				if (lines[i].Equals(""))
+				{
+					lastHeaderLine = i;
+					break;
+				}
+				var headerValue = lines[i].Split(": ");
 				headers.Add(headerValue[0], headerValue[1]);
 			}
 
-			var body = lines[^1];
+			string? body = null;
+			if (method == HttpMethod.PUT)
+			{
+				lines = lines[(lastHeaderLine + 1)..];
+				body = string.Join('\n', lines);
+			}
 
 			return new HttpRequestMessage(method, route, version, headers, body);
 		}
