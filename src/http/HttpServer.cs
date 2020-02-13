@@ -83,7 +83,7 @@ namespace http_server.http
 						if (handler != null)
 						{
 							// Create a task to handle the request
-							var task = _handleRequest(handler);
+							var task = _handleRequest(handler, cancellationToken);
 						}
 					}
 				}
@@ -111,28 +111,31 @@ namespace http_server.http
 		}
 
 		// Method to handle a request 
-		private async Task _handleRequest(Socket socket)
+		private async Task _handleRequest(Socket socket, CancellationToken cancellationToken)
 		{
 			Console.WriteLine("Handling request");
 
-			// Task waits to read the request from the socket
-			var requestMessage = await _readRequest(socket);
+			using (cancellationToken.Register(() => socket.Dispose()))
+			{
+				// Task waits to read the request from the socket
+				var requestMessage = await _readRequest(socket);
 
-			// Create the HTTP request message from the received message
-			var request = HttpRequestMessage.FromMessage(requestMessage);
+				// Create the HTTP request message from the received message
+				var request = HttpRequestMessage.FromMessage(requestMessage);
 
-			// Task waits to get the response based on the request
-			HttpResponseMessage response;
-			response = await HttpController.Run(request);
+				// Task waits to get the response based on the request
+				HttpResponseMessage response;
+				response = await HttpController.Run(request);
 
-			// Encode the response to bytes 
-			var encodedResponse = Encoding.ASCII.GetBytes(response.ToString());
+				// Encode the response to bytes 
+				var encodedResponse = Encoding.ASCII.GetBytes(response.ToString());
 
-			// Task waits for the socket to send the response
-			await socket.SendAsync(encodedResponse, SocketFlags.None);
+				// Task waits for the socket to send the response
+				await socket.SendAsync(encodedResponse, SocketFlags.None);
 
-			// Dispose of the socket
-			socket.Dispose();
+				// Dispose of the socket
+				socket.Dispose();
+			}
 		}
 
 		// Method to read the request from the socket
@@ -148,7 +151,7 @@ namespace http_server.http
 			{
 				// Get the number of bytes to be received
 				bytes = await socket.ReceiveAsync(responseBuffer, SocketFlags.None);
-				
+
 				// Receive the number of bytes
 				bytesReceived.AddRange(responseBuffer.Take(bytes));
 
