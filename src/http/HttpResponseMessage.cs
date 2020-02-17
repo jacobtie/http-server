@@ -50,6 +50,9 @@ namespace http_server.http
 				case HttpResponseCode.OK:
 					sb.Append("200 OK\r\n");
 					break;
+				case HttpResponseCode.OK_FILE_CREATED:
+					sb.Append("200 OK File Created\r\n");
+					break;
 				case HttpResponseCode.NOT_FOUND:
 					sb.Append("404 Not Found\r\n");
 					break;

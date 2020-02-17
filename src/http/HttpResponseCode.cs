@@ -4,6 +4,7 @@ namespace http_server.http
 	public enum HttpResponseCode
 	{
 		OK,
+		OK_FILE_CREATED,
 		NOT_FOUND
 	}
 }
